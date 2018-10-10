@@ -11,6 +11,8 @@ USE sub
 ! local parameters
 INTEGER :: n, ntot, nout
 REAL :: wl, ps
+period = 8.0
+amplitude = 1.0 ! forcing amplitude
 
 !**********
 CALL INIT  ! initialisation
@@ -19,7 +21,6 @@ CALL INIT  ! initialisation
 ! runtime parameters
 ntot = INT(3000./dt)
 time = 0.0
-
 ! output frequency
 nout = INT(30./dt)
 
@@ -32,9 +33,9 @@ OPEN(50,file ='rho.dat',form='formatted')
 
 
 ! prescribe plume layer with increased density
-DO i = 26,nz+1
-DO k = 0,20
- rho(i,k) = RHOREF+0.5
+DO i = 0,nz+1
+DO k = 0,nx + 1
+ rho(i,k) = RHOREF + (28./2.)*(1 + TANH((50.-i*dz)/5.))
 END DO
 END DO
 
@@ -45,6 +46,7 @@ DO n = 1,ntot
 
 time = time + dt
 write(6,*)"time (hours)", time/(3600.)
+phase = amplitude*COS(2.*PI*time/6.6)
 
 ! prognostic equations
 CALL dyn
