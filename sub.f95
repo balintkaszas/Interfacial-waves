@@ -37,9 +37,10 @@ dt = 0.1
 drdx = 1.0/(RHOREF*dx)
 drdz = 1.0/(RHOREF*dz)
 ! horizontal eddy diffusivity
-kh = 1.e-4
+kh =1e-4
 ! vertical eddy diffusivity
-kz = 1.e-4
+kz = 1e-4
+! volt
 
 ! lateral boundaries are closed
 DO i = 0,nz+1
@@ -114,6 +115,12 @@ DO k = 0,nx+1
   CwN(i,k) = 0.5*(w(i,k)-abs(w(i,k)))*dt/dz
 END DO
 END DO
+
+!DO k = 0,nx+1
+!  dq(0,k)  = -G*PI/(500) * SIN(PI*k*dx/500.)*phase*100
+!END DO
+
+  
 
 DO i = 0,nz+1
 DO k = 0,nx+1
@@ -226,13 +233,17 @@ DO k = 1,nx
   advz(i,k)= BN(i,k) + div
 END DO
 END DO
+!
+!Copied from excercise 7
+!
+force = dt*G*0.000002* SIN(2*PI*k*dx/500.)*COS(2.*PI*time/120.)
 
 ! calculate ustar and vstar 
 DO i = 1,nz
 DO k = 1,nx
   IF(wet(i,k))THEN
     pressx = -drdx*(q(i,k+1)-q(i,k))-drdx*(p(i,k+1)-p(i,k))
-    IF(wet(i,k+1)) ustar(i,k) = u(i,k) + dt*pressx + advx(i,k)
+    IF(wet(i,k+1)) ustar(i,k) = u(i,k) + dt*pressx + advx(i,k) + force
     pressz = -drdz*(q(i-1,k)-q(i,k))
     IF(wet(i-1,k)) wstar(i,k) = w(i,k) + dt*pressz + advz(i,k) 
   END IF
@@ -336,6 +347,9 @@ DO i = 1,nz
  u(i,nx) = 0.0
  q(i,nx+1) = q(i,nx)
  q(i,0) = q(i,1)
+END DO
+DO k = 1,nx
+ w(0,k) = 0.0 
 END DO
 
 RETURN
