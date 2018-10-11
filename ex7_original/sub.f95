@@ -46,13 +46,15 @@ N2 = 0.5e-4 ! stability frequency squared
 DO k = 1,nx
  depth(k) = 100.0
 END DO
-
-DO k = 21,40
- depth(k) = depth(k)-20.0*(1.-COS(REAL(k-20)/20.*2.*PI))
+DO k=21, 30
+  depth(k) = 50.
+!DO k = 21,40
+ !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-20)/20.*2.*PI))
 END DO
-
-DO k = 61,80
- depth(k) = depth(k)-20.0*(1.-COS(REAL(k-60)/20.*2.*PI))
+DO k=71,80
+  depth(k) = 50.
+!DO k = 61,80
+ !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-60)/20.*2.*PI))
 END DO
 
 
