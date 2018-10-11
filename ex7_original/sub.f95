@@ -73,8 +73,14 @@ END DO
 
 ! Initial density stratification
 DO k = 0,nx
-DO i = 0,nz+1
+DO i = 20,31
   IF(wet(i,k))rho(i,k) = RHOREF*( 1.0 + N2/G*REAL(i)*DZ )
+END DO
+END DO
+
+DO k = 0,nx
+DO i = 31,nz+1
+  IF(wet(i,k))rho(i,k) = RHOREF*( 1.0 + N2/G*REAL(31)*DZ )
 END DO
 END DO
 
