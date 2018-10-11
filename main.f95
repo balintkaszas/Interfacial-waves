@@ -22,7 +22,7 @@ CALL INIT  ! initialisation
 ntot = INT(3000./dt)
 time = 0.0
 ! output frequency
-nout = INT(30./dt)
+nout = 5!INT(30./dt)
 
 ! open files for output
 OPEN(10,file ='q.dat',form='formatted')
@@ -33,11 +33,11 @@ OPEN(50,file ='rho.dat',form='formatted')
 
 
 ! prescribe plume layer with increased density
-DO i = 0,nz+1
-DO k = 0,nx + 1
- rho(i,k) = RHOREF + (28./2.)*(1 + TANH((50.-i*dz)/5.))
-END DO
-END DO
+!DO i = 0,nz+1
+!DO k = 0,nx + 1
+! rho(i,k) = RHOREF + (28./2.)*(1 + TANH((50.-i*dz)/5.))
+!END DO
+!END DO
 
 !---------------------------
 ! simulation loop

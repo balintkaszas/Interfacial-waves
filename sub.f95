@@ -31,7 +31,7 @@ DO k = 0,nx+1
 END DO
 
 ! grid parameters
-dx = 5.0
+dx = 5.
 dz = 2.0
 dt = 0.1
 drdx = 1.0/(RHOREF*dx)
@@ -40,7 +40,6 @@ drdz = 1.0/(RHOREF*dz)
 kh =1e-4
 ! vertical eddy diffusivity
 kz = 1e-4
-! volt
 
 ! lateral boundaries are closed
 DO i = 0,nz+1
@@ -60,20 +59,33 @@ DO k = 1,nx
  depth(k) = 200.0
 END DO
 
+DO k = 21,30
+ depth(k) = 50.0
+END DO
+
+
+
 OPEN(50,file ='h.dat',form='formatted')
   WRITE(50,'(101F12.6)')(depth(k),k=1,nx)
 CLOSE(50)
 
+
 DO k = 1,nx
-
-nb = INT(depth(k)/dz)
-nbot = MIN(nb,nz+1)
-
-DO i = nb,nz+1
- wet(i,k) = .false.
+  nb = INT(depth(k)/dz)
+  nb = MIN(nb,nz+1)
+  DO i = nb,nz+1
+    wet(i,k) = .false.
+  END DO
+  wet(0,k) = .false.
 END DO
 
+
+DO k = 0,nx
+DO i = 0,nz+1
+  IF(wet(i,k)) rho(i,k) = RHOREF + (28./2.)*(1 + TANH((50.-i*dz)/5.))
 END DO
+END DO
+
 
 ! coefficients for SOR
 omega = 1.4
@@ -115,12 +127,6 @@ DO k = 0,nx+1
   CwN(i,k) = 0.5*(w(i,k)-abs(w(i,k)))*dt/dz
 END DO
 END DO
-
-!DO k = 0,nx+1
-!  dq(0,k)  = -G*PI/(500) * SIN(PI*k*dx/500.)*phase*100
-!END DO
-
-  
 
 DO i = 0,nz+1
 DO k = 0,nx+1
@@ -236,7 +242,7 @@ END DO
 !
 !Copied from excercise 7
 !
-force = dt*G*0.000002* SIN(2*PI*k*dx/500.)*COS(2.*PI*time/120.)
+force = dt*G*0.00000002* SIN(2*PI*k*dx/500.)*COS(2.*PI*time/600.)
 
 ! calculate ustar and vstar 
 DO i = 1,nz

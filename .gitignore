@@ -1,0 +1,11 @@
+run
+*.dat
+*.o
+pics/
+ex7/
+ex7_original/pics/
+*.mod
+ex7_original/*.mod
+ex7_original/*.o
+ex7_original/*.dat
+ex7_original/run
