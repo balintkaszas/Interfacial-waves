@@ -46,13 +46,13 @@ N2 = 0.5e-4 ! stability frequency squared
 DO k = 1,nx
  depth(k) = 100.0
 END DO
-DO k=21, 30
-  depth(k) = 50.
+DO k=75, 76
+  depth(k) = 70.
 !DO k = 21,40
  !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-20)/20.*2.*PI))
 END DO
-DO k=71,80
-  depth(k) = 50.
+DO k=130,131
+  depth(k) = 70.
 !DO k = 61,80
  !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-60)/20.*2.*PI))
 END DO
@@ -72,11 +72,7 @@ DO k = 1,nx
 END DO
 
 ! Initial density stratification
-DO k = 0,nx
-DO i = 20,31
-  IF(wet(i,k))rho(i,k) = RHOREF*( 1.0 + N2/G*REAL(i)*DZ )
-END DO
-END DO
+
 
 DO k = 0,nx
 DO i = 31,nz+1

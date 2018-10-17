@@ -1,6 +1,6 @@
 MODULE param
 
-INTEGER(4), PARAMETER :: nx = 101 ! horizontal dimension	
+INTEGER(4), PARAMETER :: nx = 401 ! horizontal dimension	
 INTEGER(4), PARAMETER :: nz = 51 ! vertical dimension
 REAL, PARAMETER :: G = 9.81 ! acceleration due to gravity
 REAL, PARAMETER :: RHOREF = 1028.0 ! reference density
