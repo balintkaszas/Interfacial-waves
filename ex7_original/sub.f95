@@ -37,8 +37,8 @@ dz = 2.0
 dt = 1.0
 drdx = 1.0/(RHOREF*dx)
 drdz = 1.0/(RHOREF*dz)
-kh = 1.e-4
-kz = 1.e-4
+kh = 0.
+kz = 0.
 
 N2 = 0.5e-4 ! stability frequency squared 
 
