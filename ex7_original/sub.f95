@@ -229,7 +229,7 @@ END DO
 END DO
 
 ! ambient forcing
-force = dt*G*0.005/REAL(nx)/dx
+force = dt*G*0.005/REAL(nx)/dx*COS(2.*PI*time/6.6)
 !IF(time > 20.*60.)force = 0.0
 
 ! calculate ustar and vstar 

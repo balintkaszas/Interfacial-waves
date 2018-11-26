@@ -6,8 +6,9 @@ CONTAINS
 !******************
 SUBROUTINE init
 !local parameters
-REAL :: ccc, cmc, depth(nx)
+REAL :: ccc, cmc, depth(nx),hh
 INTEGER :: nb
+REAL :: N2
 
 ! set initial arrays
 DO i = 0,nz+1
@@ -25,49 +26,55 @@ DO k = 0,nx+1
  wet(i,k) = .true.
 END DO
 END DO
-
-DO k = 0,nx+1
- usum(k) = 0.0
-END DO
-
-! grid parameters
-dx = 5.
-dz = 2.0
-dt = 0.1
-drdx = 1.0/(RHOREF*dx)
-drdz = 1.0/(RHOREF*dz)
-! horizontal eddy diffusivity
-kh =1e-4
-! vertical eddy diffusivity
-kz = 1e-4
-
-! lateral boundaries are closed
 DO i = 0,nz+1
  wet(i,0) = .false.
  wet(i,nx+1) = .false.
+ wet(i,1) = .false.
+ wet(i,nx) = .false.
+ 
 END DO
 
-! variable bottom topography (disabled)
-!DO k = 1,51
-! depth(k) =  100.0-95.*REAL(k)/REAL(51)
-!END DO
-!DO k = 52,nx
-! depth(k) = 5.0+95.0*REAL(k-51)/REAL(nx-51)
-!END DO
+DO k = 0,nx+1
+ usum(k) = 0.0
+ wet(nz,k) = .false.
+ wet(nz+1,k) = .false.
 
-DO k = 1,nx
- depth(k) = 200.0
+ END DO
+
+! grid parameters
+dx = 0.0128
+dz = 0.0064
+dt = 0.01
+drdx = 1.0/(RHOREF*dx)
+drdz = 1.0/(RHOREF*dz)
+kh = 1e-6
+kz = 1e-6
+
+N2 = 0.5e-4 ! stability frequency squared 
+
+! idealised bathymetry
+!depth(0) = 0
+!depth(nx+1) = 0
+DO k = 1,nx-1
+ depth(k) = (nz+1)*dz
 END DO
 
-DO k = 21,30
- depth(k) = 50.0
+DO k=75, 76
+  depth(k) = 13.43*dz!(nz+1)*0.5*dz
+!DO k = 21,40
+ !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-20)/20.*2.*PI))
 END DO
-
+DO k=75,76
+  depth(k+14) = 13.43*dz!(nz+1)*0.5*dz
+!DO k = 61,80
+ !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-60)/20.*2.*PI))
+END DO
 
 
 OPEN(50,file ='h.dat',form='formatted')
   WRITE(50,'(101F12.6)')(depth(k),k=1,nx)
 CLOSE(50)
+!Lateral boundaries are closed
 
 
 DO k = 1,nx
@@ -78,14 +85,26 @@ DO k = 1,nx
   END DO
   wet(0,k) = .false.
 END DO
+DRHO = 25.
+! Initial density stratification
+DO k=0,nx
+DO i = 14,17
+  IF(wet(i,k))rho(i,k) = RHOREF + (i-13)*(28./4)
+!DO i=0,nz
+!  IF(wet(i,k))rho(i,k) = RHOREF + (DRO/2.)*(1+TANH(REAL(i-13)/2))
+END DO
+END DO
 
+
+OPEN(80,file ='initial_rho_profile.dat',form='formatted')
+  WRITE(80,'(101F12.6)')(RHO(i, 10),i=1,nz)
+CLOSE(80)
 
 DO k = 0,nx
-DO i = 0,nz+1
-  IF(wet(i,k)) rho(i,k) = RHOREF + (28./2.)*(1 + TANH((50.-i*dz)/5.))
+DO i = 17,nz+1
+  IF(wet(i,k))rho(i,k) = RHOREF+ 28.
 END DO
 END DO
-
 
 ! coefficients for SOR
 omega = 1.4
@@ -97,8 +116,6 @@ DO k = 1,nx
   ab(i,k) = dx/dz
   ae(i,k) = dz/dx
   aw(i,k) = dz/dx
-  IF(.not.wet(i,k-1)) aw(i,k) = 0.0
-  IF(.not.wet(i,k+1)) ae(i,k) = 0.0
   IF(.not.wet(i+1,k)) ab(i,k) = 0.0
   IF(.not.wet(i-1,k)) at(i,k) = 0.0
   atot(i,k) = ab(i,k)+at(i,k)+ae(i,k)+aw(i,k)
@@ -117,6 +134,7 @@ INTEGER :: nsor, nstop
 REAL :: advx(0:nz+1,0:nx+1), advz(0:nz+1,0:nx+1)
 REAL :: div, div1, div2
 REAL :: dif1, dif2, difh, difv, diff
+REAL :: force
 
 ! density prediction
 DO i = 0,nz+1
@@ -134,26 +152,24 @@ DO k = 0,nx+1
 END DO
 END DO
 
-CALL advect ! density advection
+CALL advect
 
 DO i = 1,nz
 DO k = 1,nx
  div1 = (u(i,k)-u(i,k-1))/dx
  div2 = (w(i,k)-w(i+1,k))/dz
  div = dt*B(i,k)*(div1+div2)
-! add diffusion terms
  dif1 = 0.0
  IF(WET(i,k+1)) dif1 = (rho(i,k+1)-rho(i,k))/dx
  dif2 = 0.0
  IF(WET(i,k-1)) dif2 = (rho(i,k)-rho(i,k-1))/dx
- difh = kh*(dif2-dif1)/dx
+ difh = kh*(dif1-dif2)/dx
  dif1 = 0.0
  IF(WET(i-1,k)) dif1 = (rho(i-1,k)-rho(i,k))/dz
  dif2 = 0.0
  IF(WET(i+1,k)) dif2 = (rho(i,k)-rho(i+1,k))/dz
- difz = kz*(dif2-dif1)/dz
- diff = dt*(difh+difz)
-! all together now  
+ difz = kz*(dif1-dif2)/dz
+ diff = dt*(difh+difz)  
  rhon(i,k)= rho(i,k)+BN(i,k)+div+diff
 END DO
 END DO
@@ -180,7 +196,7 @@ END DO
 DO k = 0,nx+1
   P(0,k) = 0.0
   DO i = 1,nz+1
-    P(i,k) = P(i-1,k) + 0.5*(rho(i-1,k)+rho(i,k))*G*dz
+    P(i,k) = P(i-1,k) + (0.5*(rho(i-1,k)+rho(i,k))-rhoref)*G*dz
   END DO
 END DO
 
@@ -200,7 +216,6 @@ DO k = 0,nx+1
 END DO
 END DO
 
-! advection of u
 CALL advect
 
 DO i = 1,nz
@@ -228,7 +243,6 @@ DO k = 0,nx+1
 END DO
 END DO
 
-! advection of w
 CALL advect
 
 DO i = 1,nz
@@ -239,22 +253,32 @@ DO k = 1,nx
   advz(i,k)= BN(i,k) + div
 END DO
 END DO
-!
-!Copied from excercise 7
-!
-force = dt*G*0.00000002* SIN(2*PI*k*dx/500.)*COS(2.*PI*time/600.)
+
+! ambient forcing
+L = nx*dx
+force = G*0.003*2*PI/(L)*SIN(2*PI*k*dx/L)*COS(2.*PI*time/5.6)
+!IF(time > 20.*60.)force = 0.0
 
 ! calculate ustar and vstar 
 DO i = 1,nz
 DO k = 1,nx
   IF(wet(i,k))THEN
+    !force = dt*G*0.0003*SIN(2*PI*k*dx/200)*COS(2.*PI*time/6.6)
     pressx = -drdx*(q(i,k+1)-q(i,k))-drdx*(p(i,k+1)-p(i,k))
-    IF(wet(i,k+1)) ustar(i,k) = u(i,k) + dt*pressx + advx(i,k) + force
+    IF(wet(i,k+1)) ustar(i,k) = u(i,k) + dt*pressx + advx(i,k)+force*dt
     pressz = -drdz*(q(i-1,k)-q(i,k))
     IF(wet(i-1,k)) wstar(i,k) = w(i,k) + dt*pressz + advz(i,k) 
   END IF
 END DO
 END DO
+
+! cyclic boundary conditions
+!DO i = 1,nz
+! ustar(i,0) = ustar(i,nx)
+! ustar(i,nx+1) = ustar(i,1)
+! wstar(i,0) = wstar(i,nx)
+! wstar(i,nx+1) = wstar(i,1)
+!END DO
 
 ! calculate right-hand side of Poisson equation
 DO i = 1,nz
@@ -269,8 +293,14 @@ END DO
 
 nstop = 8000
 
+DO i = 1,nz
+DO k = 1,nx
+  dq(i,k) = 0.0
+END DO
+END DO 
+
 !*****************
-DO nsor = 1,nstop
+DO nsor = 1,8000
 !*****************
 
 perr = 0.0
@@ -287,6 +317,8 @@ DO k = 1,nx
   &      aw(i,k)*dq(i,k-1) + ae(i,k)*dq(i,k+1)
  q2 = (1.0-omega)*q1 + omega*term1/atot(i,k) 
  dq(i,k) = q2
+ IF(k == 1) dq(i,nx+1) = q2
+ IF(k == nx) dq(i,0) = q2
  perr = MAX(ABS(q2-q1),perr)
 
  END IF
@@ -315,11 +347,14 @@ DO k = 1,nx
 END DO
 
 ! lateral boundary conditions
-usum(nx) = 0.0
+! usum(0) = usum(nx)
+! usum(nx+1) = usum(1)
+ usum(nx) = 0.0
 
 ! STEP 3b: predict surface pressure field
 DO k = 1,nx
  dq(0,k) = -dt*RHOREF*G*(usum(k)-usum(k-1))/dx
+! IF(k == 51) dq(0,k) = dq(0,k)+ad*RHOREF*G
 END DO
 
 IF(perr <= peps)THEN
@@ -349,6 +384,18 @@ DO k = 1,nx
 END DO
 
 ! lateral boundary conditions
+  
+ !q(0,0) = q(0,nx)
+ !q(0,nx+1) = q(0,1)
+!boundary conds:
+!DO i = 1,nz
+! u(i,0) = u(i,nx)
+! u(i,nx+1) = u(i,1)
+! w(i,0) = w(i,nx)
+! w(i,nx+1) = w(i,1)
+! q(i,0) = q(i,nx)
+! q(i,nx+1) = q(i,1)
+!END DO
 DO i = 1,nz
  u(i,nx) = 0.0
  q(i,nx+1) = q(i,nx)
@@ -357,7 +404,6 @@ END DO
 DO k = 1,nx
  w(0,k) = 0.0 
 END DO
-
 RETURN
 END SUBROUTINE dyn
 
@@ -444,7 +490,8 @@ END SUBROUTINE advect
 REAL FUNCTION psi(r)
 
 ! input parameters
-REAL, INTENT(IN) :: r 
+REAL, INTENT(IN) :: r  
+
 ! local parameters 
 REAL :: term1, term2, term3
 
@@ -454,6 +501,7 @@ REAL :: term1, term2, term3
   psi = MAX(term3,0.0)
 
 RETURN
+
 
 END FUNCTION psi 
 
