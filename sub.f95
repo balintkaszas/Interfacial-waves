@@ -65,7 +65,7 @@ DO k=75, 76
  !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-20)/20.*2.*PI))
 END DO
 DO k=75,76
-  depth(k+14) = 13.43*dz!(nz+1)*0.5*dz
+  depth(k+10) = 13.43*dz!(nz+1)*0.5*dz
 !DO k = 61,80
  !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-60)/20.*2.*PI))
 END DO
@@ -95,16 +95,16 @@ DO i = 14,17
 END DO
 END DO
 
-
-OPEN(80,file ='initial_rho_profile.dat',form='formatted')
-  WRITE(80,'(101F12.6)')(RHO(i, 10),i=1,nz)
-CLOSE(80)
-
 DO k = 0,nx
 DO i = 17,nz+1
   IF(wet(i,k))rho(i,k) = RHOREF+ 28.
 END DO
 END DO
+OPEN(90,file ='initial_rho_profile.dat',form='formatted')
+  WRITE(90,'(101F12.6)')(RHO(i, 10),i=1,nz)
+CLOSE(90)
+
+
 
 ! coefficients for SOR
 omega = 1.4
@@ -256,13 +256,16 @@ END DO
 
 ! ambient forcing
 L = nx*dx
-force = G*0.003*2*PI/(L)*SIN(2*PI*k*dx/L)*COS(2.*PI*time/5.6)
 !IF(time > 20.*60.)force = 0.0
+
+
 
 ! calculate ustar and vstar 
 DO i = 1,nz
 DO k = 1,nx
   IF(wet(i,k))THEN
+    force = G*0.003*2*PI/(L)*SIN(2*PI*k/(2*nx))*COS(2.*PI*time/6.6)
+
     !force = dt*G*0.0003*SIN(2*PI*k*dx/200)*COS(2.*PI*time/6.6)
     pressx = -drdx*(q(i,k+1)-q(i,k))-drdx*(p(i,k+1)-p(i,k))
     IF(wet(i,k+1)) ustar(i,k) = u(i,k) + dt*pressx + advx(i,k)+force*dt
