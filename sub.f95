@@ -2,13 +2,19 @@ MODULE sub
 USE param
 
 CONTAINS
+character(len=20) FUNCTION str(k)
+!   "Convert an integer to string."
+    integer, intent(in) :: k
+    write (str, *) k
+    str = adjustl(str)
+END FUNCTION str
+subroutine init(d)
+integer:: d
 
-!******************
-SUBROUTINE init
 !local parameters
 REAL :: ccc, cmc, depth(nx),hh
 INTEGER :: nb
-REAL :: N2
+REAL :: N2, DRO
 
 ! set initial arrays
 DO i = 0,nz+1
@@ -43,12 +49,12 @@ DO k = 0,nx+1
 
 ! grid parameters
 dx = 0.0128
-dz = 0.0064
+dz = 0.0053
 dt = 0.01
 drdx = 1.0/(RHOREF*dx)
 drdz = 1.0/(RHOREF*dz)
-kh = 1e-6
-kz = 1e-6
+kh = 0.
+kz = 0.
 
 N2 = 0.5e-4 ! stability frequency squared 
 
@@ -59,16 +65,16 @@ DO k = 1,nx-1
  depth(k) = (nz+1)*dz
 END DO
 
-DO k=75, 76
-  depth(k) = 13.43*dz!(nz+1)*0.5*dz
+!DO k=75, 76
+  depth(90) = 14*dz!(nz+1)*0.5*dz
 !DO k = 21,40
  !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-20)/20.*2.*PI))
-END DO
-DO k=75,76
-  depth(k+10) = 13.43*dz!(nz+1)*0.5*dz
+!END DO
+!DO k=75,76
+  depth(90+INT(d)) = 14*dz!(nz+1)*0.5*dz
 !DO k = 61,80
  !depth(k) = depth(k)-20.0*(1.-COS(REAL(k-60)/20.*2.*PI))
-END DO
+!END DO
 
 
 OPEN(50,file ='h.dat',form='formatted')
@@ -88,18 +94,18 @@ END DO
 DRHO = 25.
 ! Initial density stratification
 DO k=0,nx
-DO i = 14,17
-  IF(wet(i,k))rho(i,k) = RHOREF + (i-13)*(28./4)
-!DO i=0,nz
-!  IF(wet(i,k))rho(i,k) = RHOREF + (DRO/2.)*(1+TANH(REAL(i-13)/2))
+!DO i = 14,17
+!  IF(wet(i,k))rho(i,k) = RHOREF + (i-13)*(28./4)
+DO i=0,nz
+  IF(wet(i,k))rho(i,k) = RHOREF + (28./2.)*(1.+TANH(REAL(i-13)/2))
 END DO
 END DO
 
-DO k = 0,nx
-DO i = 17,nz+1
-  IF(wet(i,k))rho(i,k) = RHOREF+ 28.
-END DO
-END DO
+!DO k = 0,nx
+!DO i = 17,nz+1
+!  IF(wet(i,k))rho(i,k) = RHOREF+ 28.
+!END DO
+!END DO
 OPEN(90,file ='initial_rho_profile.dat',form='formatted')
   WRITE(90,'(101F12.6)')(RHO(i, 10),i=1,nz)
 CLOSE(90)
@@ -134,7 +140,7 @@ INTEGER :: nsor, nstop
 REAL :: advx(0:nz+1,0:nx+1), advz(0:nz+1,0:nx+1)
 REAL :: div, div1, div2
 REAL :: dif1, dif2, difh, difv, diff
-REAL :: force
+REAL :: force,DRO
 
 ! density prediction
 DO i = 0,nz+1
@@ -264,13 +270,13 @@ L = nx*dx
 DO i = 1,nz
 DO k = 1,nx
   IF(wet(i,k))THEN
-    force = G*0.003*2*PI/(L)*SIN(2*PI*k/(2*nx))*COS(2.*PI*time/6.6)
+    force = G*0.003*2*PI/(L)*SIN(2*PI*k/(nx))*COS(2.*PI*time/6.6)
 
     !force = dt*G*0.0003*SIN(2*PI*k*dx/200)*COS(2.*PI*time/6.6)
-    pressx = -drdx*(q(i,k+1)-q(i,k))-drdx*(p(i,k+1)-p(i,k))
-    IF(wet(i,k+1)) ustar(i,k) = u(i,k) + dt*pressx + advx(i,k)+force*dt
+    pressx = -drdx*(q(i,k+1)-q(i,k))-drdx*(p(i,k+1)-p(i,k)) + force/(drdx)
+    IF(wet(i,k+1)) ustar(i,k) = u(i,k) + dt*pressx + advx(i,k)
     pressz = -drdz*(q(i-1,k)-q(i,k))
-    IF(wet(i-1,k)) wstar(i,k) = w(i,k) + dt*pressz + advz(i,k) 
+    IF(wet(i-1,k)) wstar(i,k) = w(i,k) + dt*pressz + advz(i,k) !+ force*dt
   END IF
 END DO
 END DO
